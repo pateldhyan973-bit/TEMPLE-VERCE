@@ -158,7 +158,7 @@ export default function NavBar({
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-display font-bold text-sm tracking-tight text-[#fbf9f5]">
-                  {isAdmin ? 'PILGRIM FLOW' : 'SHRINE DARSHAN'}
+                  TEMPLEVERSE
                 </span>
                 <span className="text-[10px] font-semibold bg-amber-500/15 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/30">
                   {isAdmin ? 'COMMAND' : 'PORTAL'}

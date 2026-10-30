@@ -30,7 +30,7 @@ app.use(express.urlencoded({ extended: true }))
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ONLINE',
-    service: 'Pilgrim Crowd Management System Backend Engine',
+    service: 'TempleVerse Backend Engine',
     version: '4.2.0',
     timestamp: new Date().toISOString()
   })
@@ -111,7 +111,7 @@ function startServer(portToUse: number) {
 
   currentServer.listen(portToUse, () => {
     console.log(`=======================================================`)
-    console.log(`🚀 PILGRIM FLOW AI - BACKEND SERVER ACTIVE`)
+    console.log(`🚀 TEMPLEVERSE - BACKEND SERVER ACTIVE`)
     console.log(`📡 REST API & UI: http://localhost:${portToUse}`)
     console.log(`⚡ WebSocket:     ws://localhost:${portToUse}/ws/live`)
     console.log(`=======================================================`)
