@@ -1,23 +1,33 @@
 import { useState, useEffect, useRef } from 'react'
 import PilgrimCanvas from '../components/PilgrimCanvas'
+import {
+  IconCamera,
+  IconBrain,
+  IconRoute,
+  IconAlert,
+  IconShield,
+  IconUsers,
+  IconSparkles,
+  IconActivity,
+  IconCheck,
+  IconChevronRight,
+  IconMap,
+  IconTemple
+} from '../components/Icons'
 
-interface Props { onNavigate: (page: string) => void }
-
-const FEATURE_CARDS = [
-  { icon: '◉', title: 'AI Vision Detection', desc: '128 CCTV cameras with real-time person detection and crowd density analysis.', color: '#00d4ff' },
-  { icon: '◈', title: 'Predictive Analytics', desc: 'Machine learning models predict crowd surges 15–30 minutes in advance.', color: '#00ff88' },
-  { icon: '◀', title: 'Smart Routing', desc: 'Automatic gate-flow optimization reduces congestion by up to 73%.', color: '#ffd700' },
-  { icon: '⚠', title: 'Emergency Response', desc: 'Automated emergency protocols with <90 second response activation.', color: '#ff7b2e' },
-]
+interface Props {
+  onNavigate: (page: string) => void
+}
 
 function AnimatedCounter({ target, suffix = '', prefix = '' }: { target: number; suffix?: string; prefix?: string }) {
-  const [val, setVal] = useState(0)
-  const ref = useRef(0)
+  const [val, setVal] = useState(target)
+  const ref = useRef(target)
+
   useEffect(() => {
     const start = performance.now()
     const from = ref.current
     function step(now: number) {
-      const p = Math.min((now - start) / 1400, 1)
+      const p = Math.min((now - start) / 1000, 1)
       const e = 1 - Math.pow(1 - p, 3)
       const v = Math.round(from + (target - from) * e)
       setVal(v)
@@ -26,165 +36,382 @@ function AnimatedCounter({ target, suffix = '', prefix = '' }: { target: number;
     }
     requestAnimationFrame(step)
   }, [target])
-  return <>{prefix}{val.toLocaleString()}{suffix}</>
+
+  return <span className="font-mono">{prefix}{val.toLocaleString()}{suffix}</span>
 }
 
 export default function Home({ onNavigate }: Props) {
-  const [stats, setStats] = useState({ total: 12458, gates: [62, 91, 38, 55] })
-  const [live, setLive] = useState({ total: 12458, gates: [62, 91, 38, 55] })
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => { setTimeout(() => setMounted(true), 80) }, [])
+  const [live, setLive] = useState({
+    total: 12458,
+    gates: [62, 88, 38, 52],
+    aiAccuracy: 99.4,
+    dwellTimeMins: 19,
+    activeAnomalies: 0,
+    forecastSurgePct: 14,
+  })
 
   useEffect(() => {
-    const t = setInterval(() => {
-      setLive(prev => ({
-        total: prev.total + Math.round((Math.random() - 0.4) * 15),
-        gates: prev.gates.map(g => Math.max(5, Math.min(99, g + Math.round((Math.random()-0.4)*3))))
-      }))
-    }, 3500)
+    async function fetchOverview() {
+      try {
+        const res = await fetch('/api/overview')
+        if (res.ok) {
+          const json = await res.json()
+          if (json.success && json.data) {
+            setLive(prev => ({
+              ...prev,
+              total: json.data.totalPilgrims || prev.total,
+              gates: json.data.gates ? json.data.gates.map((g: { pct: number }) => g.pct) : prev.gates
+            }))
+          }
+        }
+      } catch {
+        setLive(prev => ({
+          ...prev,
+          total: prev.total + Math.round((Math.random() - 0.45) * 14),
+          gates: prev.gates.map(g => Math.max(10, Math.min(98, g + Math.round((Math.random() - 0.48) * 3))))
+        }))
+      }
+    }
+
+    fetchOverview()
+    const t = setInterval(fetchOverview, 2500)
     return () => clearInterval(t)
   }, [])
 
-  function gateColor(pct: number) {
-    if (pct < 50) return '#00ff88'
-    if (pct < 75) return '#ffd700'
-    if (pct < 90) return '#ff7b2e'
-    return '#ff1744'
+  function gateStatus(pct: number) {
+    if (pct < 50) return { label: 'Optimal Flow', bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', bar: 'bg-emerald-500' }
+    if (pct < 75) return { label: 'Moderate', bg: 'bg-amber-500/10 text-amber-400 border-amber-500/20', bar: 'bg-amber-500' }
+    if (pct < 90) return { label: 'High Density', bg: 'bg-orange-500/10 text-orange-400 border-orange-500/20', bar: 'bg-orange-500' }
+    return { label: 'Surge Congestion', bg: 'bg-rose-500/10 text-rose-400 border-rose-500/20', bar: 'bg-rose-500' }
   }
 
+  const gateNames = ['Gate 1 (North Arch)', 'Gate 2 (East Courtyard)', 'Gate 3 (South Express)', 'Gate 4 (West Sanctum)']
+
   return (
-    <div style={{ opacity: mounted ? 1 : 0, transition: 'opacity 0.5s' }}>
-      {/* Hero */}
-      <div style={{ position: 'relative', marginBottom: 32 }}>
-        {/* Top bar */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
-          <div className="float-up">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              <span className="badge badge-green">● LIVE MONITORING</span>
-              <span className="badge badge-blue">AI ACTIVE</span>
+    <div className="space-y-6">
+      {/* Header Banner */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-2 border-b border-white/[0.06]">
+        <div>
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="badge-pill badge-emerald">
+              <span className="status-dot status-dot-emerald pulse-live" />
+              SYSTEM OPERATIONAL
+            </span>
+            <span className="text-xs text-slate-400 font-mono">128/128 SENSORS ONLINE</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-display">
+            Temple Command & Crowd Flow Intelligence
+          </h1>
+          <p className="text-sm text-slate-400 max-w-2xl mt-1">
+            Real-time vision analytics, automated sanctum gate diversion, and AI-predicted crowd surge mitigation.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => onNavigate('emergency')}
+            className="btn-danger text-xs py-2 px-3.5"
+          >
+            <IconAlert size={14} />
+            <span>Evacuation Protocol</span>
+          </button>
+          <button
+            onClick={() => onNavigate('routes')}
+            className="btn-primary text-xs py-2 px-3.5"
+          >
+            <IconRoute size={14} />
+            <span>Route Optimization</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Top Executive KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Metric 1 */}
+        <div className="card-pro p-5">
+          <div className="flex items-center justify-between text-[#a89f91] mb-2">
+            <span className="text-xs font-semibold tracking-wider uppercase text-[#d6cebf]">Total Devotees in Complex</span>
+            <div className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center">
+              <IconUsers size={16} />
             </div>
-            <h1 className="orbitron glow-blue" style={{ fontSize: 'clamp(22px, 3vw, 38px)', fontWeight: 800, margin: 0, lineHeight: 1.15, letterSpacing: '-0.01em' }}>
-              AI-POWERED PILGRIM<br />CROWD MANAGEMENT
-            </h1>
-            <p style={{ color: '#94a3b8', maxWidth: 440, marginTop: 10, fontSize: 14, lineHeight: 1.6 }}>
-              Real-time monitoring, predictive analytics, and autonomous crowd-flow optimization for large-scale pilgrimage events.
-            </p>
+          </div>
+          <div className="text-3xl font-extrabold text-[#fbf9f5] font-display tracking-tight">
+            <AnimatedCounter target={live.total} />
+          </div>
+          <div className="flex items-center gap-2 mt-3 text-xs">
+            <span className="text-emerald-400 font-semibold flex items-center gap-0.5">
+              ↑ +4.2%
+            </span>
+            <span className="text-[#a89f91]">vs last hour average</span>
+          </div>
+        </div>
+
+        {/* Metric 2 */}
+        <div className="card-pro p-5">
+          <div className="flex items-center justify-between text-[#a89f91] mb-2">
+            <span className="text-xs font-semibold tracking-wider uppercase text-[#d6cebf]">Sanctum Wait Time</span>
+            <div className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center">
+              <IconTemple size={16} />
+            </div>
+          </div>
+          <div className="text-3xl font-extrabold text-[#fbf9f5] font-display tracking-tight">
+            <span className="font-mono">{live.dwellTimeMins}</span> <span className="text-lg font-normal text-[#a89f91]">mins</span>
+          </div>
+          <div className="flex items-center gap-2 mt-3 text-xs">
+            <span className="text-emerald-400 font-semibold">↓ -6 mins</span>
+            <span className="text-[#a89f91]">due to East diversion</span>
+          </div>
+        </div>
+
+        {/* Metric 3 */}
+        <div className="card-pro p-5">
+          <div className="flex items-center justify-between text-[#a89f91] mb-2">
+            <span className="text-xs font-semibold tracking-wider uppercase text-[#d6cebf]">AI Vision Accuracy</span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <IconCamera size={16} />
+            </div>
+          </div>
+          <div className="text-3xl font-extrabold text-[#fbf9f5] font-display tracking-tight">
+            <span className="font-mono">{live.aiAccuracy}</span><span className="text-lg font-normal text-[#a89f91]">%</span>
+          </div>
+          <div className="flex items-center gap-2 mt-3 text-xs">
+            <span className="badge-pill bg-emerald-500/10 text-emerald-400 text-[10px] py-0 px-1.5 border border-emerald-500/20">
+              YOLOv9 Neural Net
+            </span>
+            <span className="text-[#a89f91]">±2 error margin</span>
+          </div>
+        </div>
+
+        {/* Metric 4 */}
+        <div className="card-pro p-5">
+          <div className="flex items-center justify-between text-[#a89f91] mb-2">
+            <span className="text-xs font-semibold tracking-wider uppercase text-[#d6cebf]">Surge Prediction (30m)</span>
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+              <IconBrain size={16} />
+            </div>
+          </div>
+          <div className="text-3xl font-extrabold text-[#fbf9f5] font-display tracking-tight">
+            <span className="text-amber-400 font-mono">+{live.forecastSurgePct}%</span>
+          </div>
+          <div className="flex items-center gap-2 mt-3 text-xs">
+            <span className="text-[#d6cebf] font-medium">Risk Level:</span>
+            <span className="text-emerald-400 font-semibold">Low (Controlled)</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Section: Spatial Canvas & Live Gate Telemetry */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left: Spatial Canvas (2 cols) */}
+        <div className="lg:col-span-2 card-pro overflow-hidden flex flex-col">
+          <div className="p-4 sm:px-6 sm:py-4 border-b border-white/[0.08] flex items-center justify-between flex-wrap gap-2 bg-[#181512]">
+            <div className="flex items-center gap-2.5">
+              <IconMap size={18} className="text-amber-400" />
+              <div>
+                <h3 className="text-sm font-bold text-[#fbf9f5] font-display">Live Spatial Pilgrim Density Radar</h3>
+                <p className="text-[11px] text-[#a89f91]">Interactive 2D complex tracking & corridor velocity</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="badge-pill badge-amber text-[10px]">REAL-TIME VECTOR STREAM</span>
+              <button
+                onClick={() => onNavigate('livemap')}
+                className="text-xs text-amber-400 hover:text-amber-300 font-medium flex items-center gap-1 pl-2"
+              >
+                <span>Full Radar</span>
+                <IconChevronRight size={13} />
+              </button>
+            </div>
           </div>
 
-          {/* Live gate stats */}
-          <div className="glass float-up d3" style={{ padding: '18px 22px', minWidth: 240 }}>
-            <div style={{ fontFamily: 'Orbitron', fontSize: 10, color: '#4b6080', letterSpacing: '0.1em', marginBottom: 12 }}>LIVE GATE STATUS</div>
-            <div style={{ fontFamily: 'JetBrains Mono', fontSize: 26, fontWeight: 500, color: '#00d4ff', marginBottom: 4, lineHeight: 1 }}>
-              <AnimatedCounter target={live.total} />
+          <div className="relative bg-[#080d19] min-h-[380px] flex items-center justify-center p-2">
+            <PilgrimCanvas />
+
+            {/* Clean Floating Legend */}
+            <div className="absolute bottom-4 left-4 p-2.5 rounded-xl bg-slate-900/90 border border-white/10 backdrop-blur-md text-[11px] flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                <span className="text-slate-300">Optimal (&lt;45%)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                <span className="text-slate-300">Moderate</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-orange-400"></span>
+                <span className="text-slate-300">Heavy</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                <span className="text-slate-300">Congested</span>
+              </div>
             </div>
-            <div style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: '#4b6080', marginBottom: 14 }}>Current Pilgrims</div>
-            {['G1 West','G2 East','G3 South','G4 North'].map((label, i) => {
-              const pct = live.gates[i] ?? 50
-              const color = gateColor(pct)
-              return (
-                <div key={label} style={{ marginBottom: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                    <span style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: '#94a3b8' }}>{label}</span>
-                    <span style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color }}>{pct}%</span>
+          </div>
+        </div>
+
+        {/* Right: Live Gate Congestion Status (1 col) */}
+        <div className="card-pro p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08] mb-4">
+              <div>
+                <h3 className="text-sm font-bold text-white font-display">Gate Flow Status</h3>
+                <p className="text-[11px] text-slate-400">Live telemetry across 4 entry vectors</p>
+              </div>
+              <button
+                onClick={() => onNavigate('routes')}
+                className="text-xs text-amber-400 hover:text-amber-300 font-medium"
+              >
+                Manage
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {gateNames.map((name, i) => {
+                const pct = live.gates[i] ?? 50
+                const st = gateStatus(pct)
+                return (
+                  <div key={name} className="p-3 rounded-xl bg-slate-900/50 border border-white/[0.05] space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-slate-200">{name}</span>
+                      <span className="font-mono font-bold text-white">{pct}%</span>
+                    </div>
+                    {/* Progress Bar */}
+                    <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-700 ease-out ${st.bar}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border ${st.bg}`}>
+                        {st.label}
+                      </span>
+                      <span className="text-slate-400 font-mono">
+                        ~{Math.round(pct * 2.8)} dev/min
+                      </span>
+                    </div>
                   </div>
-                  <div style={{ height: 3, background: 'rgba(255,255,255,0.07)', borderRadius: 2 }}>
-                    <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 2, transition: 'width 0.8s ease, background 0.5s ease', boxShadow: `0 0 6px ${color}` }} />
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Quick AI Action Card */}
+          <div className="mt-5 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs">
+            <div className="flex items-center gap-2 font-semibold text-amber-300 mb-1">
+              <IconSparkles size={14} />
+              <span>AI Flow Recommendation</span>
+            </div>
+            <p className="text-[#d6cebf] text-[11px] leading-relaxed mb-3">
+              Gate 2 (East) approaching 88% capacity. Automated diversion to Gate 3 (South Express) can reduce queue time by 7.4 minutes.
+            </p>
+            <button
+              onClick={() => onNavigate('routes')}
+              className="btn-primary w-full py-1.5 px-3 text-[11px]"
+            >
+              Apply Staggered Diversion
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Exploration Grid */}
+      <div className="space-y-3 pt-2">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-bold text-[#fbf9f5] font-display">Specialized Command Subsystems</h3>
+          <span className="text-xs text-[#a89f91]">Direct clearance access</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[
+            {
+              id: 'detection',
+              title: 'CCTV Neural Vision',
+              desc: 'Multi-camera person detection with bounding boxes and trajectory analysis.',
+              icon: IconCamera,
+              tag: '128 FEEDS',
+              color: 'text-amber-400',
+              bg: 'bg-amber-500/10 border-amber-500/20'
+            },
+            {
+              id: 'prediction',
+              title: 'Surge Prediction AI',
+              desc: 'LSTM neural models forecasting crowd surges 15–30 minutes in advance.',
+              icon: IconBrain,
+              tag: 'LSTM MODEL',
+              color: 'text-amber-300',
+              bg: 'bg-amber-500/10 border-amber-500/20'
+            },
+            {
+              id: 'routes',
+              title: 'Smart Dynamic Routing',
+              desc: 'Autonomous gate diversion controllers reducing corridor bottlenecking.',
+              icon: IconRoute,
+              tag: 'AUTOMATED',
+              color: 'text-amber-400',
+              bg: 'bg-amber-500/10 border-amber-500/20'
+            },
+            {
+              id: 'emergency',
+              title: 'Evacuation Command',
+              desc: 'Automated high-speed evacuation sequencing with siren & gate overrides.',
+              icon: IconAlert,
+              tag: '&lt;90s RESPONSE',
+              color: 'text-rose-400',
+              bg: 'bg-rose-500/10 border-rose-500/20'
+            },
+            {
+              id: 'incidents',
+              title: 'Incident Dispatch Center',
+              desc: 'Rapid security & medical team dispatch, situational audit logging.',
+              icon: IconShield,
+              tag: 'LIVE TICKETING',
+              color: 'text-emerald-400',
+              bg: 'bg-emerald-500/10 border-emerald-500/20'
+            },
+            {
+              id: 'pilgrim',
+              title: 'Devotee Public Portal',
+              desc: 'Digital queue pass registration, VIP darshan passes, and live wait times.',
+              icon: IconTemple,
+              tag: 'CITIZEN FACING',
+              color: 'text-amber-300',
+              bg: 'bg-amber-500/10 border-amber-500/20'
+            },
+          ].map(mod => {
+            const Icon = mod.icon
+            return (
+              <button
+                key={mod.id}
+                onClick={() => onNavigate(mod.id)}
+                className="card-pro card-pro-hover p-4 text-left flex items-start justify-between group"
+              >
+                <div className="space-y-1.5 pr-2">
+                  <div className="flex items-center gap-2">
+                    <span className={`p-1.5 rounded-lg ${mod.bg}`}>
+                      <Icon size={16} className={mod.color} />
+                    </span>
+                    <h4 className="text-sm font-bold text-[#fbf9f5] group-hover:text-amber-300 transition-colors font-display">
+                      {mod.title}
+                    </h4>
+                  </div>
+                  <p className="text-xs text-[#a89f91] leading-relaxed line-clamp-2">
+                    {mod.desc}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end gap-3 shrink-0">
+                  <span
+                    className="text-[9px] font-mono px-2 py-0.5 rounded bg-[#25201b] text-[#d6cebf] border border-white/5 font-semibold"
+                    dangerouslySetInnerHTML={{ __html: mod.tag }}
+                  />
+                  <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[#a89f91] group-hover:text-[#1a1612] group-hover:bg-amber-500 transition-all">
+                    <IconChevronRight size={14} />
                   </div>
                 </div>
-              )
-            })}
-          </div>
+              </button>
+            )
+          })}
         </div>
-
-        {/* Canvas */}
-        <div className="glass" style={{ position: 'relative', overflow: 'hidden', padding: 0 }}>
-          <div style={{ position: 'absolute', top: 10, left: 14, zIndex: 5, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <span className="badge badge-blue">◉ CAMERA NETWORK</span>
-            <span className="badge badge-green">✓ 128/128 ONLINE</span>
-          </div>
-          <div style={{ position: 'absolute', top: 10, right: 14, zIndex: 5 }}>
-            <span className="badge badge-green blink">● LIVE</span>
-          </div>
-          <PilgrimCanvas onStats={s => setStats(s)} />
-          <div className="scan-line-v" style={{ zIndex: 4 }} />
-
-          {/* Legend */}
-          <div style={{ position: 'absolute', bottom: 10, left: 14, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            {[['🟢','Low'],['🟡','Medium'],['🟠','High'],['🔴','Critical']].map(([dot, label]) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'JetBrains Mono', fontSize: 9, color: '#94a3b8' }}>
-                <span>{dot}</span><span>{label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Feature cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 32 }}>
-        {FEATURE_CARDS.map((card, i) => (
-          <div key={card.title} className={`glass float-up d${i+1}`} style={{ padding: 20, cursor: 'default', transition: 'border-color 0.2s' }}>
-            <div style={{ fontSize: 22, marginBottom: 10, color: card.color, fontFamily: 'Orbitron' }}>{card.icon}</div>
-            <div className="orbitron" style={{ fontSize: 12, fontWeight: 600, color: card.color, letterSpacing: '0.05em', marginBottom: 6 }}>{card.title}</div>
-            <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.55 }}>{card.desc}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Explore section */}
-      <div className="glass" style={{ padding: 28, marginBottom: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
-          <div>
-            <div className="orbitron" style={{ fontSize: 13, fontWeight: 700, color: '#00d4ff', letterSpacing: '0.08em', marginBottom: 4 }}>EXPLORE THE SYSTEM</div>
-            <div style={{ color: '#94a3b8', fontSize: 13 }}>Dive into each module to see how AI manages pilgrim safety</div>
-          </div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
-          {[
-            {id:'livemap', label:'Live Crowd Map', desc:'Interactive real-time map', color:'#00d4ff'},
-            {id:'detection', label:'AI Detection', desc:'CCTV person detection', color:'#00ff88'},
-            {id:'prediction', label:'Crowd Forecast', desc:'15–30 min predictions', color:'#ffd700'},
-            {id:'routes', label:'Smart Routes', desc:'Automated flow routing', color:'#ff7b2e'},
-            {id:'emergency', label:'Emergency Mode', desc:'Rapid response protocols', color:'#ff1744'},
-            {id:'analytics', label:'Analytics', desc:'Historical & live data', color:'#a78bfa'},
-          ].map(item => (
-            <button
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
-                background: 'rgba(255,255,255,0.03)', border: `1px solid rgba(255,255,255,0.07)`,
-                borderRadius: 8, cursor: 'pointer', color: item.color, textAlign: 'left',
-                transition: 'all 0.15s', fontFamily: 'inherit',
-              }}
-            >
-              <div style={{ flex: 1 }}>
-                <div className="orbitron" style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', marginBottom: 2 }}>{item.label}</div>
-                <div style={{ fontSize: 11, color: '#4b6080', fontFamily: 'JetBrains Mono' }}>{item.desc}</div>
-              </div>
-              <span style={{ fontSize: 14, opacity: 0.6 }}>›</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Bottom system stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
-        {[
-          {label:'Cameras Online', value:'128', unit:'/ 128', color:'#00ff88'},
-          {label:'AI Accuracy', value:'99.2', unit:'%', color:'#00d4ff'},
-          {label:'Avg Response', value:'1.4', unit:'sec', color:'#ffd700'},
-          {label:'Incidents Prevented', value:'47', unit:' today', color:'#a78bfa'},
-          {label:'Gates Managed', value:'16', unit:' active', color:'#ff7b2e'},
-          {label:'Pilgrims Served', value:'2.8M', unit:' today', color:'#00ff88'},
-        ].map((s, i) => (
-          <div key={s.label} className={`glass float-up d${(i%6)+1}`} style={{ padding: '16px 18px' }}>
-            <div style={{ fontFamily: 'JetBrains Mono', fontSize: 9, color: '#4b6080', letterSpacing: '0.08em', marginBottom: 6 }}>{s.label.toUpperCase()}</div>
-            <div className="orbitron" style={{ fontSize: 22, fontWeight: 700, color: s.color }}>
-              {s.value}<span style={{ fontSize: 13, fontWeight: 400, color: '#4b6080' }}>{s.unit}</span>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   )
