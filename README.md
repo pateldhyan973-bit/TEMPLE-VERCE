@@ -254,7 +254,7 @@ Additional notification endpoints are available under `/api/notifications`. Refe
 
 Explore the deployed application:
 
-**[TempleVerse Live Demo](https://crowd-rgbr.vercel.app/)**
+**[TempleVerse Live Demo](https://temple-verce-2.vercel.app/)**
 
 **GitHub Repository:**  
 [https://github.com/pateldhyan973-bit/TEMPLE-VERCE](https://github.com/pateldhyan973-bit/TEMPLE-VERCE)
